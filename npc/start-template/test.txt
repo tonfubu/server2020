@@ -1,0 +1,5 @@
+-	script	Test	-1,{
+	end;
+}
+
+prontera,158,181,5	duplicate(Test)	Test#2	909

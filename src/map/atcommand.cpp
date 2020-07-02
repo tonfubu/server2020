@@ -6100,6 +6100,9 @@ ACMD_FUNC(autotrade) {
 		status_change_start(NULL,&sd->bl, SC_AUTOTRADE, 10000, 0, 0, 0, 0, ((timeout > 0) ? min(timeout,battle_config.at_timeout) : battle_config.at_timeout) * 60000, SCSTART_NONE);
 	}
 
+	if (battle_config.at_logout_event)
+		npc_script_event(sd, NPCE_LOGOUT); //Logout Event
+
 	channel_pcquit(sd,0xF); //leave all chan
 	clif_authfail_fd(sd->fd, 15);
 
@@ -6137,6 +6140,24 @@ ACMD_FUNC(changegm)
 
 	if((pl_sd=map_nick2sd(atcmd_player_name,false)) == NULL || pl_sd->status.guild_id != sd->status.guild_id) {
 		clif_displaymessage(fd, msg_txt(sd,1184)); // Target character must be online and be a guild member.
+		return -1;
+	}
+
+	if( !battle_config.guild_leaderchange_woe && is_agit_start() ){
+#if PACKETVER >= 20151001
+		clif_msg(sd, GUILD_MASTER_WOE);
+#else
+		clif_displaymessage(fd, msg_txt(sd,1513)); // Currently in WoE hours, unable to delegate Guild leader
+#endif
+		return -1;
+	}
+
+	if( battle_config.guild_leaderchange_delay && DIFF_TICK(time(NULL),sd->guild->last_leader_change) < battle_config.guild_leaderchange_delay ){
+#if PACKETVER >= 20151001
+		clif_msg(sd, GUILD_MASTER_DELAY);
+#else
+		clif_displaymessage(fd, msg_txt(sd,1514)); // You have to wait for a while before delegating a new Guild leader
+#endif
 		return -1;
 	}
 
